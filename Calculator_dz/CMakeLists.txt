@@ -39,3 +39,5 @@ endfunction()
 add_calc_plugin(funcsin "plagins_src/funcsin.cpp")
 add_calc_plugin(funcln  "plagins_src/funcln.cpp")
 add_calc_plugin(funcexp "plagins_src/funcexp.cpp")
+
+add_dependencies(Calculator_dz funcsin funcln funcexp)
