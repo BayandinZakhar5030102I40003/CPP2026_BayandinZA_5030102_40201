@@ -1,21 +1,38 @@
-﻿add_executable (Calculator_dz 
-    "Calculator.cpp"
-    "Calculator.h"
-    "Command.h"
-    "Parser.h"
-    "Parser.cpp"
-    "Plagins.h"
-    "Plagins.cpp"
+﻿cmake_minimum_required(VERSION 3.20)
+
+project(Calculator_dz LANGUAGES CXX)
+
+set(CMAKE_CXX_STANDARD 17)
+set(CMAKE_CXX_STANDARD_REQUIRED ON)
+set(CMAKE_CXX_EXTENSIONS OFF)
+
+set(OUTPUT_DIR "${CMAKE_BINARY_DIR}/bin/$<CONFIG>")
+
+add_executable(Calculator_dz
+    Calculator.cpp
+    Calculator.h
+    Command.h
+    Parser.cpp
+    Parser.h
+    Plagins.cpp
+    Plagins.h
 )
 
-target_include_directories(Calculator_dz PRIVATE ${CMAKE_CURRENT_SOURCE_DIR})
+target_include_directories(Calculator_dz
+    PRIVATE
+        "${CMAKE_CURRENT_SOURCE_DIR}"
+)
+
+set_target_properties(Calculator_dz PROPERTIES
+    RUNTIME_OUTPUT_DIRECTORY "${OUTPUT_DIR}"
+)
 
 function(add_calc_plugin PLUGIN_NAME SOURCE_FILE)
-    add_library(${PLUGIN_NAME} SHARED ${SOURCE_FILE})
+    add_library(${PLUGIN_NAME} SHARED "${SOURCE_FILE}")
+
     set_target_properties(${PLUGIN_NAME} PROPERTIES
-        RUNTIME_OUTPUT_DIRECTORY "${CMAKE_CURRENT_BINARY_DIR}/plagins"
-        RUNTIME_OUTPUT_DIRECTORY_DEBUG "${CMAKE_CURRENT_BINARY_DIR}/plagins"
-        RUNTIME_OUTPUT_DIRECTORY_RELEASE "${CMAKE_CURRENT_BINARY_DIR}/plagins"
+        RUNTIME_OUTPUT_DIRECTORY "${OUTPUT_DIR}/plagins"
+        LIBRARY_OUTPUT_DIRECTORY "${OUTPUT_DIR}/plagins"
     )
 endfunction()
 
