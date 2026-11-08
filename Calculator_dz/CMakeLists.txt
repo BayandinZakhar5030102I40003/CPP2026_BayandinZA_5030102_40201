@@ -1,12 +1,8 @@
 ﻿cmake_minimum_required(VERSION 3.20)
 
-project(Calculator_dz LANGUAGES CXX)
-
-set(CMAKE_CXX_STANDARD 17)
-set(CMAKE_CXX_STANDARD_REQUIRED ON)
-set(CMAKE_CXX_EXTENSIONS OFF)
-
-set(OUTPUT_DIR "${CMAKE_BINARY_DIR}/bin/$<CONFIG>")
+set(OUTPUT_DIR "${CMAKE_BINARY_DIR}/bin")
+set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${OUTPUT_DIR})
+set(CMAKE_LIBRARY_OUTPUT_DIRECTORY ${OUTPUT_DIR}/plagins)
 
 add_executable(Calculator_dz
     Calculator.cpp
@@ -18,21 +14,12 @@ add_executable(Calculator_dz
     Plagins.h
 )
 
-target_include_directories(Calculator_dz
-    PRIVATE
-        "${CMAKE_CURRENT_SOURCE_DIR}"
-)
-
-set_target_properties(Calculator_dz PROPERTIES
-    RUNTIME_OUTPUT_DIRECTORY "${OUTPUT_DIR}"
-)
+target_include_directories(Calculator_dz PRIVATE "${CMAKE_CURRENT_SOURCE_DIR}")
 
 function(add_calc_plugin PLUGIN_NAME SOURCE_FILE)
     add_library(${PLUGIN_NAME} SHARED "${SOURCE_FILE}")
-
     set_target_properties(${PLUGIN_NAME} PROPERTIES
-        RUNTIME_OUTPUT_DIRECTORY "${OUTPUT_DIR}/plagins"
-        LIBRARY_OUTPUT_DIRECTORY "${OUTPUT_DIR}/plagins"
+        PREFIX "" 
     )
 endfunction()
 
@@ -41,3 +28,10 @@ add_calc_plugin(funcln  "plagins_src/funcln.cpp")
 add_calc_plugin(funcexp "plagins_src/funcexp.cpp")
 
 add_dependencies(Calculator_dz funcsin funcln funcexp)
+
+add_custom_command(TARGET Calculator_dz POST_BUILD
+    COMMAND ${CMAKE_COMMAND} -E make_directory $<TARGET_FILE_DIR:Calculator_dz>/plagins
+    COMMAND ${CMAKE_COMMAND} -E copy_if_different $<TARGET_FILE:funcsin> $<TARGET_FILE_DIR:Calculator_dz>/plagins
+    COMMAND ${CMAKE_COMMAND} -E copy_if_different $<TARGET_FILE:funcln> $<TARGET_FILE_DIR:Calculator_dz>/plagins
+    COMMAND ${CMAKE_COMMAND} -E copy_if_different $<TARGET_FILE:funcexp> $<TARGET_FILE_DIR:Calculator_dz>/plagins
+)
