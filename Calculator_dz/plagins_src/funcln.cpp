@@ -1,12 +1,18 @@
 #include <cmath>
 #include <stdexcept>
 
-extern "C" {
-__declspec(dllexport) char const* GetName() { return "ln"; }
-__declspec(dllexport) int GetCount() { return 1; }
-__declspec(dllexport) int GetQueue() { return 4; }
+#if defined(_WIN32)
+#define PLUGIN_EXPORT __declspec(dllexport)
+#else
+#define PLUGIN_EXPORT __attribute__((visibility("default")))
+#endif
 
-__declspec(dllexport) double OneCalc(double x) {
+extern "C" {
+PLUGIN_EXPORT char const* GetName() { return "ln"; }
+PLUGIN_EXPORT int GetCount() { return 1; }
+PLUGIN_EXPORT int GetQueue() { return 4; }
+
+PLUGIN_EXPORT double OneCalc(double x) {
   if (x <= 0.0) {
     throw std::runtime_error("Îøèáêà ln");
   }
