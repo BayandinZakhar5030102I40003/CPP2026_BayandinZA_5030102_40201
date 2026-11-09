@@ -16,6 +16,10 @@ add_executable(Calculator_dz
 
 target_include_directories(Calculator_dz PRIVATE "${CMAKE_CURRENT_SOURCE_DIR}")
 
+if (UNIX AND NOT APPLE)
+    target_link_libraries(Calculator_dz PRIVATE ${CMAKE_DL_LIBS})
+endif()
+
 function(add_calc_plugin PLUGIN_NAME SOURCE_FILE)
     add_library(${PLUGIN_NAME} SHARED "${SOURCE_FILE}")
     set_target_properties(${PLUGIN_NAME} PROPERTIES

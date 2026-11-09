@@ -1,7 +1,16 @@
 #include "Plagins.h"
 
+#include <filesystem>
 #include <iostream>
 #include <stdexcept>
+
+#ifdef _WIN32
+#include <windows.h>
+#else
+#include <dlfcn.h>
+#endif
+
+namespace fs = std::filesystem;
 
 using NamePtr = char const* (*)();
 using InfoPtr = int (*)();
@@ -45,46 +54,55 @@ Function const& Plagins::GetFunc(std::string const& name) const {
 }
 
 void Plagins::LoadPlagins(std::string const& path) {
-  std::string mask = path + "\\*.dll";
-  WIN32_FIND_DATAA fileData;
-  HANDLE hFind = FindFirstFileA(mask.c_str(), &fileData);
-
-  if (hFind == INVALID_HANDLE_VALUE) {
-    std::cout << "Ошибка, плагины не найдены\n";
+  if (!fs::exists(path) || !fs::is_directory(path)) {
+    std::cout << "Ошибка, папка плагинов не найдена\n";
     return;
   }
 
-  using FindPtr = std::unique_ptr<void, std::function<void(HANDLE)>>;
-  FindPtr findGuard(hFind, [](HANDLE h) {
-    if (h != INVALID_HANDLE_VALUE) FindClose(h);
-  });
+#ifdef _WIN32
+  std::string ext = ".dll";
+#else
+  std::string ext = ".so";
+#endif
 
-  do {
-    if (fileData.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY) {
+  for (const auto& entry : fs::directory_iterator(path)) {
+    if (!entry.is_regular_file() || entry.path().extension() != ext) {
       continue;
     }
 
-    std::string fileName = fileData.cFileName;
-    std::string fullPath = path + "\\" + fileName;
+    std::string fullPath = entry.path().string();
+    std::string fileName = entry.path().filename().string();
 
-    DllHandle dll(LoadLibraryA(fullPath.c_str()), [](HMODULE h) {
-      if (h) FreeLibrary(h);
-    });
+#ifdef _WIN32
+    void* hLib = LoadLibraryA(fullPath.c_str());
+    auto freeLib = [](void* h) {
+      if (h) FreeLibrary(static_cast<HMODULE>(h));
+    };
+    auto getProc = [hLib](const char* name) {
+      return reinterpret_cast<void*>(
+          GetProcAddress(static_cast<HMODULE>(hLib), name));
+    };
+#else
+    void* hLib = dlopen(fullPath.c_str(), RTLD_LAZY);
+    auto freeLib = [](void* h) {
+      if (h) dlclose(h);
+    };
+    auto getProc = [hLib](const char* name) { return dlsym(hLib, name); };
+#endif
+
+    DllHandle dll(hLib, freeLib);
 
     if (!dll) {
-      std::cout << "Ошибка " << fileName << "\n";
+      std::cout << "Ошибка загрузки библиотеки " << fileName << "\n";
       continue;
     }
 
-    auto getName =
-        reinterpret_cast<NamePtr>(GetProcAddress(dll.get(), "GetName"));
-    auto getCount =
-        reinterpret_cast<InfoPtr>(GetProcAddress(dll.get(), "GetCount"));
-    auto getQueue =
-        reinterpret_cast<InfoPtr>(GetProcAddress(dll.get(), "GetQueue"));
+    auto getName = reinterpret_cast<NamePtr>(getProc("GetName"));
+    auto getCount = reinterpret_cast<InfoPtr>(getProc("GetCount"));
+    auto getQueue = reinterpret_cast<InfoPtr>(getProc("GetQueue"));
 
     if (!getName || !getCount || !getQueue) {
-      std::cout << "Ошибка " << fileName << "\n";
+      std::cout << "Ошибка формата плагина " << fileName << "\n";
       continue;
     }
 
@@ -98,13 +116,11 @@ void Plagins::LoadPlagins(std::string const& path) {
     int queue = getQueue();
 
     if (countEl == 1) {
-      auto oneCalc =
-          reinterpret_cast<OneFuncPtr>(GetProcAddress(dll.get(), "OneCalc"));
+      auto oneCalc = reinterpret_cast<OneFuncPtr>(getProc("OneCalc"));
       if (!oneCalc) continue;
       OneFuncI(name, queue, oneCalc);
     } else if (countEl == 2) {
-      auto biCalc =
-          reinterpret_cast<BiFuncPtr>(GetProcAddress(dll.get(), "BiCalc"));
+      auto biCalc = reinterpret_cast<BiFuncPtr>(getProc("BiCalc"));
       if (!biCalc) continue;
       BiFuncI(name, queue, biCalc);
     } else {
@@ -112,6 +128,5 @@ void Plagins::LoadPlagins(std::string const& path) {
     }
 
     loadDlls.emplace_back(std::move(dll));
-
-  } while (FindNextFileA(hFind, &fileData) != 0);
+  }
 }

@@ -1,6 +1,8 @@
 ﻿#include "Calculator.h"
 
+#ifdef _WIN32
 #include <windows.h>
+#endif
 
 #include <iostream>
 #include <string>
@@ -9,9 +11,10 @@
 #include "Plagins.h"
 
 int main() {
+#ifdef _WIN32
   SetConsoleCP(1251);
   SetConsoleOutputCP(1251);
-
+#endif
   Plagins plagins;
 
   plagins.LoadPlagins("./plagins");

@@ -1,5 +1,4 @@
 #pragma once
-#include <windows.h>
 
 #include <functional>
 #include <map>
@@ -24,9 +23,9 @@ class Plagins final {
   Plagins(Plagins&&) = default;
   Plagins& operator=(Plagins&&) = default;
 
-  void OneFuncI(std::string const& name, int queue, OneElFunc ::OneFunc func);
+  void OneFuncI(std::string const& name, int queue, OneElFunc::OneFunc func);
 
-  void BiFuncI(std::string const& name, int queue, BiElFunc ::BiFunc func);
+  void BiFuncI(std::string const& name, int queue, BiElFunc::BiFunc func);
 
   void LoadPlagins(std::string const& path);
 
@@ -34,8 +33,7 @@ class Plagins final {
   Function const& GetFunc(std::string const& name) const;
 
  private:
-  using DllHandle = std::unique_ptr<std::remove_pointer_t<HMODULE>,
-                                    std::function<void(HMODULE)>>;
+  using DllHandle = std::unique_ptr<void, std::function<void(void*)>>;
 
   std::vector<DllHandle> loadDlls;
   std::map<std::string, Function> smthf;
