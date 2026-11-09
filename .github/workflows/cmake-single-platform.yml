@@ -1,0 +1,27 @@
+name: CMake Build and Test
+
+on:
+  push:
+    branches: [ "DZ_Calculator" ] # Ваша ветка
+  pull_request:
+    branches: [ "master" ]        # Ветка, куда вы делаете PR
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+    - uses: actions/checkout@v4
+
+    - name: Configure CMake
+      # Настраиваем проект (создаем папку build)
+      run: cmake -B ${{github.workspace}}/build -DCMAKE_BUILD_TYPE=Release
+
+    - name: Build
+      # Собираем проект
+      run: cmake --build ${{github.workspace}}/build --config Release
+
+    - name: Test
+      # Запускаем тесты (если они есть в CMake)
+      working-directory: ${{github.workspace}}/build
+      run: ctest -C Release --output-on-failure
